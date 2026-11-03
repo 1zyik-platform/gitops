@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: "hello-ci"
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # The chart comes from the service repo
+    - repoURL: https://github.com/1zyik-platform/hello-ci.git
+      targetRevision: main
+      path: deploy
+      helm:
+        valueFiles:
+          - $values/apps/hello-ci/values.yaml
+        # CI writes values.yaml, so it may not exist yet when this is merged
+        ignoreMissingValueFiles: true
+    # The image tag comes from this repo
+    - repoURL: https://github.com/1zyik-platform/gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: "hello-ci"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
